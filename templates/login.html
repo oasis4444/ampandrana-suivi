@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}Connexion — Ampandrana{% endblock %}
+{% block content %}
+<div class="card auth">
+  <h2>Ampandrana — Connexion</h2>
+  <form method="post" class="grid" style="gap:10px">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label class="f">Identifiant <input name="username" id="username" autocomplete="username" required autofocus></label>
+    <label class="f">Mot de passe <input type="password" name="password" id="password" autocomplete="current-password" required></label>
+    <button class="primary">Se connecter</button>
+  </form>
+</div>
+{% endblock %}

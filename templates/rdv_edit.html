@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% block title %}Rendez-vous — Ampandrana{% endblock %}
+{% block content %}
+<div class="toolbar"><a href="{{ url_for('rdv_list') }}">← Rendez-vous</a></div>
+<div class="card">
+  <h2>{{ 'Rendez-vous — ' ~ r.projet if r.id else 'Nouveau rendez-vous' }}</h2>
+  <form method="post" class="form">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label class="f">Projet <input name="projet" id="projet" value="{{ r.projet or '' }}" required></label>
+    <label class="f">Téléphone <input name="tel" id="tel" value="{{ r.tel or '' }}"></label>
+    <label class="f">Lieu (toerana) <input name="lieu" id="lieu" value="{{ r.lieu or '' }}"></label>
+    <label class="f">Frais <input name="frais" id="frais" value="{{ r.frais or '' }}"></label>
+    <label class="f">Date <input type="date" name="date" id="date" value="{{ r.date or '' }}"></label>
+    <label class="f">Heure <input name="heure" id="heure" value="{{ r.heure or '' }}"></label>
+    <label class="f">Responsable <select name="responsable" id="responsable"><option value="">—</option>{% for n in team %}<option {% if r.responsable==n %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></label>
+    <label class="f">Statut <input name="statut" id="statut" value="{{ r.statut or '' }}"></label>
+    <label class="f wide">Notes <textarea name="notes" id="notes">{{ r.notes or '' }}</textarea></label>
+    <div class="actions wide">
+      {% if r.id %}<button class="danger" name="supprimer" value="1" formnovalidate>Supprimer</button>{% endif %}
+      <span style="flex:1"></span><button class="primary">Enregistrer</button></div>
+  </form>
+</div>
+{% endblock %}

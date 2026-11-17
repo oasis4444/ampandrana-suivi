@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% block title %}Équipe — Ampandrana{% endblock %}
+{% block content %}
+<div class="grid two">
+<div class="card">
+  <h2>Membres de l'équipe <small>Apparaissent dans « Encaissé par », « Responsable »…</small></h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Nom</th><th>Rôle</th><th>Téléphone</th><th class="r">Commandes (responsable)</th><th class="r">Encaissé</th><th></th></tr></thead>
+    <tbody>
+    {% for e in rows %}
+      <tr {% if not e.actif %}class="cancel"{% endif %}><td><b>{{ e.nom }}</b></td><td>{{ e.role or '' }}</td><td>{{ e.tel or '' }}</td><td class="num r">{{ e.ncmd }}</td><td class="num r">{{ e.enc|ar }}</td>
+        <td class="keep r"><form method="post" action="{{ url_for('equipe_toggle', eid=e.id) }}" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="link">{{ 'Désactiver' if e.actif else 'Réactiver' }}</button></form></td></tr>
+    {% else %}<tr><td colspan="6" class="empty">Aucun membre.</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+<div class="card">
+  <h2>Ajouter un membre</h2>
+  <form method="post" class="form">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label class="f">Nom <input name="nom" id="nom" required></label>
+    <label class="f">Rôle <input name="role" id="role"></label>
+    <label class="f">Téléphone <input name="tel" id="tel"></label>
+    <div class="actions wide"><button class="primary">Ajouter</button></div>
+  </form>
+  <p class="small muted">Un membre désactivé n'apparaît plus dans les listes de choix, mais son historique reste. Pour qu'un membre puisse se connecter et saisir des paiements à son nom, l'administrateur lui crée un compte dans « Utilisateurs ».</p>
+</div>
+</div>
+{% endblock %}

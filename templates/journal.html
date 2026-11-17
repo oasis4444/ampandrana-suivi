@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% block title %}Journal — Ampandrana{% endblock %}
+{% block content %}
+<div class="toolbar"><a href="{{ url_for('import_page') }}">← Import</a></div>
+<div class="card"><h2>Journal des actions <small>500 dernières</small></h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Quand</th><th>Qui</th><th>Action</th><th>Objet</th><th>Détails</th></tr></thead>
+  <tbody>{% for j in rows %}<tr><td class="num small">{{ j.quand|fdt }}</td><td>{{ j.nom or '—' }}</td><td>{{ j.action }}</td><td>{{ j.objet }}</td><td class="small">{{ j.details or '' }}</td></tr>
+  {% else %}<tr><td colspan="5" class="empty">Aucune action.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

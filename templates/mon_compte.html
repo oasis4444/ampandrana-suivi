@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% block content %}
+<div class="card auth" style="margin-top:0">
+  <h2>Mon compte <small>{{ g.user.username }} · {{ g.user.role }}</small></h2>
+  <form method="post" class="grid" style="gap:10px">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label class="f">Ancien mot de passe <input type="password" name="old" id="old" required></label>
+    <label class="f">Nouveau mot de passe <input type="password" name="new" id="new" required minlength="6"></label>
+    <button class="primary">Changer le mot de passe</button>
+  </form>
+</div>
+{% endblock %}

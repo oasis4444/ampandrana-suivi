@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% block title %}Utilisateurs — Ampandrana{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Comptes <small>chaque paiement saisi enregistre automatiquement le compte connecté</small></h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Nom</th><th>Identifiant</th><th>Rôle</th><th class="r">Paiements saisis</th><th class="r">Montant saisi</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for u in rows %}
+      <tr {% if not u.actif %}class="cancel"{% endif %}><td><b>{{ u.nom }}</b>{% if u.id==g.user.id %} <span class="chip st-info">vous</span>{% endif %}</td><td>{{ u.username }}</td><td>{{ u.role }}</td>
+        <td class="num r">{{ u.npay }}</td><td class="num r">{{ u.spay|ar }}</td>
+        <td class="keep" style="white-space:nowrap">
+          {% if u.id != g.user.id %}
+          <form method="post" action="{{ url_for('utilisateur_action', uid=u.id) }}" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="desactiver"><button class="link">{{ 'Désactiver' if u.actif else 'Réactiver' }}</button></form>
+          <form method="post" action="{{ url_for('utilisateur_action', uid=u.id) }}" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="role"><button class="link">{{ 'Rendre membre' if u.role=='admin' else 'Rendre admin' }}</button></form>
+          {% endif %}
+          <details style="display:inline-block"><summary class="small">Nouveau mot de passe</summary>
+            <form method="post" action="{{ url_for('utilisateur_action', uid=u.id) }}" class="toolbar"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="mdp"><input type="password" name="password" minlength="6" required aria-label="Nouveau mot de passe"><button>OK</button></form></details>
+        </td></tr>
+    {% endfor %}
+    </tbody></table></div>
+</div>
+<div class="card">
+  <h2>Créer un compte</h2>
+  <form method="post" class="form">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label class="f">Nom affiché <input name="nom" id="nom" required placeholder="ex. Toky"></label>
+    <label class="f">Identifiant <input name="username" id="username" required placeholder="ex. toky"></label>
+    <label class="f">Mot de passe <input type="password" name="password" id="password" minlength="6" required></label>
+    <label class="f">Rôle <select name="role" id="role"><option value="membre">Membre</option><option value="admin">Administrateur</option></select></label>
+    <div class="actions wide"><button class="primary">Créer le compte</button></div>
+  </form>
+</div>
+{% endblock %}

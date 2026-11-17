@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% block title %}Paiements — Ampandrana{% endblock %}
+{% block content %}
+<form class="toolbar" method="get">
+  <label class="f">Période <select name="periode" id="periode" onchange="this.form.du.parentElement.hidden=this.form.au.parentElement.hidden=(this.value!=='custom')">
+    {% for v, l in [('all','Tout'),('today',"Aujourd'hui"),('month','Ce mois'),('prevmonth','Mois précédent'),('custom','Personnalisée…')] %}<option value="{{ v }}" {% if periode==v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></label>
+  <label class="f" {% if periode!='custom' %}hidden{% endif %}>Du <input type="date" name="du" id="du" value="{{ args.get('du','') }}"></label>
+  <label class="f" {% if periode!='custom' %}hidden{% endif %}>Au <input type="date" name="au" id="au" value="{{ args.get('au','') }}"></label>
+  <label class="f">Mode <select name="mode" id="mode"><option value="">Tous</option>{% for m in mlist %}<option {% if args.get('mode')==m %}selected{% endif %}>{{ m }}</option>{% endfor %}</select></label>
+  <label class="f">Encaissé par <select name="enc" id="enc"><option value="">Tous</option>{% for n in team %}<option {% if args.get('enc')==n %}selected{% endif %}>{{ n }}</option>{% endfor %}<option value="-" {% if args.get('enc')=='-' %}selected{% endif %}>Non renseigné</option></select></label>
+  <label class="f">Saisi par <select name="saisi" id="saisi"><option value="">Tous</option>{% for u in users %}<option value="{{ u.id }}" {% if args.get('saisi')==u.id|string %}selected{% endif %}>{{ u.nom }}</option>{% endfor %}<option value="-" {% if args.get('saisi')=='-' %}selected{% endif %}>Import Excel</option></select></label>
+  <label class="f grow">Rechercher <input type="search" name="q" id="q" value="{{ args.get('q','') }}" placeholder="Client, N°, référence…"></label>
+  <label class="small"><input type="checkbox" name="verifier" value="1" {% if args.get('verifier')=='1' %}checked{% endif %}> Seulement ceux à vérifier</label>
+  <label class="small"><input type="checkbox" name="annules" value="1" {% if args.get('annules')=='1' %}checked{% endif %}> Afficher les annulés</label>
+  <button>Filtrer</button>
+</form>
+<div class="toolbar">
+  <span style="flex:1"></span>
+  <a class="btn primary" href="{{ url_for('paiement_nouveau') }}">+ Nouveau paiement</a>
+  {% set qs = args.to_dict() %}{% set _ = qs.update({'format':'csv'}) %}
+  <a class="btn" href="{{ url_for('paiements', **qs) }}">Exporter CSV</a>
+</div>
+<div class="muted small">{{ label }} · {{ rows|length }} paiement(s) · Total <b class="num">{{ total|ar }}</b>{% for m, v in by_mode.items() %} · {{ m }} {{ v|num }}{% endfor %}</div>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Date</th><th>N°</th><th>Client</th><th class="r">Montant</th><th>Mode</th><th>Référence</th><th>Encaissé par</th><th>Saisi par</th><th>Remarque</th></tr></thead>
+  <tbody>
+  {% for p, issues in rows %}
+    <tr class="click {{ 'cancel' if p.annule }}" onclick="location.href='{{ url_for('paiement', pid=p.id) }}'">
+      <td class="num">{{ p.date|fd }}</td><td class="num"><a href="{{ url_for('commande', cid=p.commande_id) }}" onclick="event.stopPropagation()">{{ p.commande_id|code }}</a></td>
+      <td>{{ p.client or '?' }}</td><td class="num r"><b>{{ p.montant|num }}</b></td>
+      <td class="keep"><span class="chip" style="--c:{{ MODE_COLORS.get(p.mode,'#8a94a0') }}"><i></i>{{ p.mode }}</span></td>
+      <td class="small num">{{ p.reference or '' }}</td>
+      <td>{% if p.encaisse_par %}{{ p.encaisse_par }}{% else %}<span class="flag">?</span>{% endif %}</td>
+      <td class="keep"><div class="who">{{ p.saisi_nom or 'Import Excel' }}<span>{{ p.saisi_le|fdt }}</span></div></td>
+      <td class="small keep">{% if p.annule %}<span class="chip st-bad">Annulé par {{ p.annule_nom }} : {{ p.motif_annulation }}</span> {% endif %}{{ p.remarque or '' }}
+        {% if issues and not p.annule %}<span class="chip st-warn">{{ issues|join(', ') }}</span>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="9" class="empty">Aucun paiement ne correspond.</td></tr>{% endfor %}
+  </tbody></table></div>
+{% endblock %}

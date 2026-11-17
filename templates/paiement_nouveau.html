@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block title %}Nouveau paiement — Ampandrana{% endblock %}
+{% block content %}
+<div class="toolbar"><a href="{{ url_for('paiements') }}">← Paiements</a></div>
+<div class="card">
+  <h2>Nouveau paiement <small>enregistré au nom de {{ g.user.nom }}</small></h2>
+  <form method="post" class="form">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <input type="hidden" name="back" value="{{ url_for('paiements') }}">
+    <label class="f wide">Commande (N° ou client) <input name="commande" id="commande" list="cmds" required value="{{ f.get('commande','') }}" placeholder="CMD-012 — Nom du client"></label>
+    <datalist id="cmds">{% for c in cmds %}<option value="{{ c.id|code }} — {{ c.client }}">{% endfor %}</datalist>
+    {% set pf = f %}{% set pf_team = team %}{% set pf_lock = False %}
+    {% include "_payform.html" %}
+    <div class="actions wide"><button class="primary">Enregistrer le paiement</button></div>
+  </form>
+</div>
+{% endblock %}

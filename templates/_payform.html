@@ -1,0 +1,9 @@
+<label class="f">Date du paiement <input type="date" name="date" id="pf-date" value="{{ pf.date or today_iso }}" required></label>
+<label class="f">Montant (Ar) <input type="number" min="1" step="1" name="montant" id="pf-montant" value="{{ pf.montant if pf.montant else '' }}" {% if pf_lock %}disabled{% else %}required{% endif %}></label>
+<label class="f">Mode de paiement <select name="mode" id="pf-mode" required>
+  <option value="">Choisir…</option>{% for m in mlist %}<option {% if pf.mode==m %}selected{% endif %}>{{ m }}</option>{% endfor %}
+  {% if pf.mode == A_PRECISER %}<option selected>{{ A_PRECISER }}</option>{% endif %}</select></label>
+<label class="f">Référence MVola / Orange <input name="reference" id="pf-ref" value="{{ pf.reference or '' }}" placeholder="ex. 10991729603"></label>
+<label class="f">Nandray ny vola (encaissé par) <select name="encaisse_par" id="pf-enc" required>
+  <option value="">Choisir…</option>{% for n in pf_team %}<option {% if pf.encaisse_par==n %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></label>
+<label class="f wide">Remarque <input name="remarque" id="pf-rem" value="{{ pf.remarque or '' }}"></label>

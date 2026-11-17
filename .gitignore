@@ -1,0 +1,9 @@
+instance/
+*.db
+*.sqlite3
+*.xlsx
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env

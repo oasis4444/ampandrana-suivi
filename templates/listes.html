@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% block title %}Listes — Ampandrana{% endblock %}
+{% block content %}
+<p class="muted small" style="margin:0">Valeurs proposées dans les listes de choix. Retirer une valeur ne modifie pas les commandes ou paiements qui l'utilisent déjà.{% if g.user.role != 'admin' %} Seul un administrateur peut modifier les listes.{% endif %}</p>
+<div class="grid two">
+{% for cat, label in labels.items() %}
+<div class="card">
+  <h2>{{ label }}</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Valeur</th><th class="r">Utilisée</th>{% if g.user.role=='admin' %}<th></th>{% endif %}</tr></thead>
+    <tbody>
+    {% for r in data[cat] %}
+      <tr><td>{% if cat=='mode_paiement' %}<span class="chip" style="--c:{{ MODE_COLORS.get(r.valeur,'#5b6b8c') }}"><i></i>{{ r.valeur }}</span>{% else %}{{ r.valeur }}{% endif %}</td>
+        <td class="num r">{{ usage[cat].get(r.valeur, 0) }}</td>
+        {% if g.user.role=='admin' %}<td class="r" style="white-space:nowrap">
+          <form method="post" action="{{ url_for('liste_monter', lid=r.id) }}" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="link" title="Monter">↑</button></form>
+          <form method="post" action="{{ url_for('liste_supprimer', lid=r.id) }}" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="link">Retirer</button></form></td>{% endif %}</tr>
+    {% endfor %}
+    </tbody></table></div>
+  {% if g.user.role=='admin' %}
+  <form method="post" class="toolbar" style="margin-top:10px">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="categorie" value="{{ cat }}">
+    <label class="f grow">Nouvelle valeur <input name="valeur" id="v-{{ cat }}" required></label><button>Ajouter</button>
+  </form>
+  {% endif %}
+</div>
+{% endfor %}
+</div>
+{% endblock %}

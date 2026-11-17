@@ -1,0 +1,65 @@
+{% extends "base.html" %}{% block title %}Mr — Ampandrana{% endblock %}
+{% block content %}
+<form class="toolbar" method="get">
+  <label class="f">Mois affiché (détail par jour)
+    <select name="mois" id="mois" onchange="this.form.submit()">
+      <option value="">Tous les jours</option>
+      {% for m in mois_opts %}<option value="{{ m }}" {% if m==mois_sel %}selected{% endif %}>{{ mois_nom(m) }}</option>{% endfor %}
+    </select>
+  </label>
+  <span class="muted small">« Messages » = lignes de commande du jour · « Projets » = commandes avec un prix, hors annulées · Montant, avances et reste sont rattachés à la date de la commande · « Encaissé » suit la date du paiement.</span>
+</form>
+
+{% if not days %}
+<div class="card empty">Aucune donnée. Importez votre fichier Excel ou créez une commande.</div>
+{% else %}
+<div class="card">
+  <h2>Résumé par mois</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Mois</th><th class="r">Nombre de messages</th><th class="r">Nombre de projets</th><th class="r">Montant des projets (Ar)</th><th class="r">Avances reçues (Ar)</th><th class="r">Reste à payer (Ar)</th>
+      {% for m in enc_cols %}<th class="r">Encaissé {{ m }}</th>{% endfor %}<th class="r">Total encaissé</th></tr></thead>
+    <tbody>
+      <tr class="total"><td>TOTAL</td><td class="num r">{{ mtot.messages }}</td><td class="num r">{{ mtot.projets }}</td><td class="num r">{{ mtot.montant|num }}</td><td class="num r">{{ mtot.avances|num }}</td><td class="num r">{{ mtot.reste|num }}</td>
+        {% for m in enc_cols %}<td class="num r">{{ mtot.enc[m]|num }}</td>{% endfor %}<td class="num r">{{ mtot.enc_total|num }}</td></tr>
+      {% for k, v in months %}
+      <tr class="{% if v.projets %}green{% endif %}"><td><a href="{{ url_for('mr', mois=k) }}">{{ mois_nom(k) }}</a></td><td class="num r">{{ v.messages }}</td><td class="num r">{{ v.projets }}</td><td class="num r">{{ v.montant|num }}</td><td class="num r">{{ v.avances|num }}</td><td class="num r">{{ v.reste|num }}</td>
+        {% for m in enc_cols %}<td class="num r">{{ v.enc[m]|num }}</td>{% endfor %}<td class="num r"><b>{{ v.enc_total|num }}</b></td></tr>
+      {% endfor %}
+    </tbody></table></div>
+</div>
+
+<div class="grid two">
+  <div class="card"><h2>Messages et projets par date</h2><div class="chart-box"><canvas id="ch1"></canvas></div></div>
+  <div class="card"><h2>Argent par date (Ar)</h2><div class="chart-box"><canvas id="ch2"></canvas></div></div>
+</div>
+
+<div class="card">
+  <h2>Détail par jour <small>{{ mois_nom(mois_sel) if mois_sel else 'tous les jours' }}</small></h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Date</th><th class="r">Nombre de messages</th><th class="r">Nombre de projets</th><th class="r">Montant des projets (Ar)</th><th class="r">Avances reçues (Ar)</th><th class="r">Reste à payer (Ar)</th>
+      {% for m in enc_cols %}<th class="r">Encaissé {{ m }}</th>{% endfor %}</tr></thead>
+    <tbody>
+      <tr class="total"><td>TOTAL</td><td class="num r">{{ totals.messages }}</td><td class="num r">{{ totals.projets }}</td><td class="num r">{{ totals.montant|num }}</td><td class="num r">{{ totals.avances|num }}</td><td class="num r">{{ totals.reste|num }}</td>
+        {% for m in enc_cols %}<td class="num r">{{ totals.get(m,0)|num }}</td>{% endfor %}</tr>
+      {% for k, v in days %}
+      <tr class="{% if v.projets %}green{% endif %}"><td class="num">{{ jour(k) }} {{ k|fd }}</td><td class="num r">{{ v.messages }}</td><td class="num r">{{ v.projets }}</td><td class="num r">{{ v.montant|num }}</td><td class="num r">{{ v.avances|num }}</td><td class="num r">{{ v.reste|num }}</td>
+        {% for m in enc_cols %}<td class="num r">{{ v.enc[m]|num }}</td>{% endfor %}</tr>
+      {% endfor %}
+    </tbody></table></div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if chart %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+(function(){
+  if(!window.Chart) return;
+  const d={{ chart|tojson }}; const ink=getComputedStyle(document.documentElement).getPropertyValue('--ink-2').trim();
+  const opt={maintainAspectRatio:false,plugins:{legend:{labels:{color:ink}}},scales:{x:{ticks:{color:ink,maxRotation:0,autoSkip:true}},y:{ticks:{color:ink}}}};
+  new Chart(document.getElementById('ch1'),{type:'bar',data:{labels:d.labels,datasets:[{label:'Nombre de messages',data:d.messages,backgroundColor:'#4F81BD'},{label:'Nombre de projets',data:d.projets,backgroundColor:'#C0504D'}]},options:opt});
+  new Chart(document.getElementById('ch2'),{type:'bar',data:{labels:d.labels,datasets:[{label:'Montant des projets',data:d.montant,backgroundColor:'#4F81BD'},{label:'Avances reçues',data:d.avances,backgroundColor:'#C0504D'},{label:'Reste à payer',data:d.reste,backgroundColor:'#9BBB59'}]},options:opt});
+})();
+</script>
+{% endif %}
+{% endblock %}

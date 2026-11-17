@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block title %}Premier démarrage — Ampandrana{% endblock %}
+{% block content %}
+<div class="card auth">
+  <h2>Premier démarrage</h2>
+  <p class="muted small">Créez le compte administrateur. Vous pourrez ensuite créer un compte pour chaque membre de l'équipe : chaque paiement enregistrera automatiquement qui l'a saisi.</p>
+  <form method="post" class="grid" style="gap:10px">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label class="f">Votre nom (affiché) <input name="nom" id="nom" required></label>
+    <label class="f">Identifiant <input name="username" id="username" required></label>
+    <label class="f">Mot de passe (6 caractères minimum) <input type="password" name="password" id="password" required minlength="6"></label>
+    <button class="primary">Créer le compte administrateur</button>
+  </form>
+</div>
+{% endblock %}

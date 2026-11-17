@@ -1,0 +1,96 @@
+{% extends "base.html" %}{% block title %}Tableau de bord — Ampandrana{% endblock %}
+{% block content %}
+<form class="toolbar" method="get">
+  <label class="f">Période des encaissements
+    <select name="periode" id="periode" onchange="this.form.du.parentElement.hidden=this.form.au.parentElement.hidden=(this.value!=='custom'); if(this.value!=='custom') this.form.submit()">
+      {% for v, l in [('today',"Aujourd'hui"),('month','Ce mois'),('prevmonth','Mois précédent'),('all','Tout'),('custom','Personnalisée…')] %}
+      <option value="{{ v }}" {% if periode==v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="f" {% if periode!='custom' %}hidden{% endif %}>Du <input type="date" name="du" id="du" value="{{ du }}"></label>
+  <label class="f" {% if periode!='custom' %}hidden{% endif %}>Au <input type="date" name="au" id="au" value="{{ au }}"></label>
+  {% if periode=='custom' %}<button>Afficher</button>{% endif %}
+  <span class="muted small">{{ label }}</span>
+  <span style="flex:1"></span>
+  <a class="btn" href="{{ url_for('export_xlsx') }}">Exporter tout en Excel</a>
+</form>
+
+<div class="grid tiles">
+  <div class="tile" style="--c:var(--accent)"><div class="l">Total encaissé</div><div class="v">{{ total|ar }}</div><div class="s">{{ npay }} paiement(s)</div></div>
+  <div class="tile" style="--c:var(--m-esp)"><div class="l">Espèces</div><div class="v">{{ by_mode['Espèces'].s|ar if 'Espèces' in by_mode else '0 Ar' }}</div><div class="s">{{ by_mode['Espèces'].n if 'Espèces' in by_mode else 0 }} paiement(s)</div></div>
+  <div class="tile" style="--c:var(--m-mvola)"><div class="l">MVola</div><div class="v">{{ by_mode['MVola'].s|ar if 'MVola' in by_mode else '0 Ar' }}</div><div class="s">{{ by_mode['MVola'].n if 'MVola' in by_mode else 0 }} paiement(s)</div></div>
+  <div class="tile" style="--c:var(--m-orange)"><div class="l">Orange Money</div><div class="v">{{ by_mode['Orange Money'].s|ar if 'Orange Money' in by_mode else '0 Ar' }}</div><div class="s">{{ by_mode['Orange Money'].n if 'Orange Money' in by_mode else 0 }} paiement(s)</div></div>
+  <div class="tile" style="--c:var(--m-vir)"><div class="l">Mobile money (total)</div><div class="v">{{ mobile|ar }}</div><div class="s">MVola + Orange + Airtel</div></div>
+  {% set autres = namespace(s=0, t=[]) %}
+  {% for m, v in by_mode.items() if m not in ('Espèces','MVola','Orange Money') %}{% set autres.s = autres.s + v.s %}{% set autres.t = autres.t + [m ~ ' ' ~ (v.s|num)] %}{% endfor %}
+  <div class="tile" style="--c:var(--m-prec)"><div class="l">Autres</div><div class="v">{{ autres.s|ar }}</div><div class="s">{{ autres.t|join(' · ') }}</div></div>
+</div>
+
+<div class="grid two">
+  <div class="card">
+    <h2>Vola noraisin'ny mpikambana <small>Encaissé par, selon le mode</small></h2>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Membre</th><th class="r">Espèces</th><th class="r">MVola</th><th class="r">Orange Money</th><th class="r">Autres</th><th class="r">Total</th></tr></thead>
+      <tbody>
+      {% for nom, r in member_rows %}
+        {% set o = r.total - r.get('Espèces',0) - r.get('MVola',0) - r.get('Orange Money',0) %}
+        <tr><td>{% if nom %}{{ nom }}{% else %}<span class="flag">Non renseigné</span>{% endif %}</td>
+          <td class="num r">{{ r.get('Espèces',0)|num }}</td><td class="num r">{{ r.get('MVola',0)|num }}</td><td class="num r">{{ r.get('Orange Money',0)|num }}</td>
+          <td class="num r">{{ o|num }}</td><td class="num r"><b>{{ r.total|ar }}</b></td></tr>
+      {% else %}<tr><td colspan="6" class="empty">Aucun encaissement sur la période.</td></tr>{% endfor %}
+      </tbody></table></div>
+  </div>
+  <div class="card">
+    <h2>Nampiditra <small>Qui a saisi les paiements (automatique, selon le compte connecté)</small></h2>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Saisi par</th><th class="r">Nb</th><th class="r">Montant</th><th>Dernière saisie</th></tr></thead>
+      <tbody>
+      {% for nom, v in saisie %}
+        <tr><td>{% if nom %}{{ nom }}{% else %}<span class="muted">Import Excel (avant le logiciel)</span>{% endif %}</td><td class="num r">{{ v.n }}</td><td class="num r">{{ v.s|ar }}</td><td class="small muted">{{ v.last|fdt }}</td></tr>
+      {% else %}<tr><td colspan="4" class="empty">Aucune saisie sur la période.</td></tr>{% endfor %}
+      </tbody></table></div>
+  </div>
+</div>
+
+<div class="grid two">
+  <div class="card">
+    <h2>Encaissements par mois <small>6 derniers mois, par mode</small></h2>
+    <div class="chart-box"><canvas id="chart-mois" aria-label="Encaissements par mois"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>À vérifier</h2>
+    <div class="alerts">
+      {% set any_alert = alerts.prec or alerts.enc or alerts.ref or alerts.lost %}
+      {% if alerts.prec %}<a class="btn" href="{{ url_for('paiements', verifier=1) }}"><span><b class="num">{{ alerts.prec }}</b> paiement(s) dont le mode est « À préciser »</span></a>{% endif %}
+      {% if alerts.enc %}<a class="btn" href="{{ url_for('paiements', enc='-') }}"><span><b class="num">{{ alerts.enc }}</b> paiement(s) sans « Encaissé par »</span></a>{% endif %}
+      {% if alerts.ref %}<a class="btn" href="{{ url_for('paiements', verifier=1) }}"><span><b class="num">{{ alerts.ref }}</b> paiement(s) mobile money sans référence</span></a>{% endif %}
+      {% if alerts.lost %}<a class="btn" href="{{ url_for('paiements', verifier=1) }}"><span><b class="num">{{ alerts.lost }}</b> paiement(s) liés à une commande introuvable</span></a>{% endif %}
+      {% if not any_alert %}<div class="empty">Tout est en ordre.</div>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Commandes <small>toutes périodes, montants hors annulées</small></h2>
+  <div class="grid tiles">
+    <div class="tile" style="--c:var(--accent)"><div class="l">Commandes</div><div class="v">{{ stats.n }}</div><div class="s">{% for s, n in stats.par_statut.items() %}{{ s }} {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}</div></div>
+    <div class="tile" style="--c:var(--accent)"><div class="l">Montant des commandes</div><div class="v">{{ stats.montant|ar }}</div><div class="s">hors annulées</div></div>
+    <div class="tile" style="--c:var(--good)"><div class="l">Total encaissé</div><div class="v">{{ stats.encaisse|ar }}</div><div class="s">tous les paiements valides</div></div>
+    <div class="tile" style="--c:var(--bad)"><div class="l">Reste à payer</div><div class="v">{{ stats.reste|ar }}</div><div class="s">par les clients</div></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+(function(){
+  if(!window.Chart) return;
+  const d = {{ chart|tojson }};
+  const ink = getComputedStyle(document.documentElement).getPropertyValue('--ink-2').trim();
+  new Chart(document.getElementById('chart-mois'), {type:'bar',
+    data:{labels:d.labels, datasets:d.series.map(s=>({label:s.label,data:s.data,backgroundColor:s.color,stack:'m'}))},
+    options:{maintainAspectRatio:false, plugins:{legend:{labels:{color:ink}}, tooltip:{callbacks:{label:c=>c.dataset.label+' : '+c.parsed.y.toLocaleString('fr-FR')+' Ar'}}},
+      scales:{x:{stacked:true,ticks:{color:ink}}, y:{stacked:true,ticks:{color:ink,callback:v=>v>=1e6?(v/1e6)+' M':v>=1e3?(v/1e3)+' k':v}}}}});
+})();
+</script>
+{% endblock %}

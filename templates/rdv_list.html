@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% block title %}Rendez-vous — Ampandrana{% endblock %}
+{% block content %}
+<div class="toolbar"><span style="flex:1"></span><a class="btn primary" href="{{ url_for('rdv_edit') }}">+ Nouveau rendez-vous</a></div>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Date</th><th>Heure</th><th>Projet</th><th>Téléphone</th><th>Lieu</th><th>Frais</th><th>Responsable</th><th>Statut</th><th>Notes</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr class="click" onclick="location.href='{{ url_for('rdv_edit', rid=r.id) }}'"><td class="num">{{ r.date|fd }}</td><td>{{ r.heure or '' }}</td><td><b>{{ r.projet }}</b></td><td class="small">{{ r.tel or '' }}</td><td>{{ r.lieu or '' }}</td><td>{{ r.frais or '' }}</td><td>{{ r.responsable or '' }}</td><td>{{ r.statut or '' }}</td><td class="small">{{ r.notes or '' }}</td></tr>
+  {% else %}<tr><td colspan="9" class="empty">Aucun rendez-vous.</td></tr>{% endfor %}
+  </tbody></table></div>
+{% endblock %}

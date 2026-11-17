@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% block title %}Import / export — Ampandrana{% endblock %}
+{% block content %}
+<div class="grid two">
+<div class="card">
+  <h2>Importer le fichier Excel</h2>
+  <p class="small muted">Feuilles lues : Commandes, Paiements, Equipe, Listes, RENDEZ- VOUS. Sans feuille « Paiements », chaque « Avance payée » devient un paiement « À préciser ».</p>
+  <p class="small">Actuellement : <b>{{ counts.commandes }}</b> commandes · <b>{{ counts.paiements }}</b> paiements · <b>{{ counts.equipe }}</b> membres · <b>{{ counts.rdv }}</b> rendez-vous.</p>
+  <form method="post" enctype="multipart/form-data" class="grid" style="gap:10px">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label class="f">Fichier .xlsx <input type="file" name="fichier" id="fichier" accept=".xlsx" required></label>
+    {% if counts.commandes %}<label class="small"><input type="checkbox" name="remplacer" value="1"> Remplacer toutes les commandes, paiements, rendez-vous et l'équipe actuels</label>{% endif %}
+    <div class="actions" style="justify-content:flex-start"><button class="primary">Importer</button></div>
+  </form>
+</div>
+<div class="card">
+  <h2>Exporter et historique</h2>
+  <div class="grid" style="gap:8px">
+    <a class="btn" href="{{ url_for('export_xlsx') }}">Télécharger toute la base en Excel</a>
+    <a class="btn" href="{{ url_for('paiements', format='csv') }}">Télécharger les paiements (CSV)</a>
+    <a class="btn" href="{{ url_for('journal') }}">Voir le journal des actions</a>
+  </div>
+</div>
+</div>
+{% endblock %}

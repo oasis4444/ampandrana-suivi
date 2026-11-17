@@ -1,0 +1,61 @@
+{% extends "base.html" %}{% block title %}{{ 'Nouvelle commande' if new else c.code ~ ' — ' ~ c.client }}{% endblock %}
+{% block content %}
+<div class="toolbar"><a href="{{ url_for('commandes') }}">← Commandes</a></div>
+<div class="card">
+  <h2>{% if new %}Nouvelle commande{% else %}{{ c.code }} — {{ c.client }}{% endif %}</h2>
+  <form method="post" class="form">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label class="f">Date commande <input type="date" name="date" id="date" value="{{ c.date or '' }}"></label>
+    <label class="f">Nom du client (Facebook) <input name="client" id="client" value="{{ c.client or '' }}" required></label>
+    <label class="f">Téléphone <input name="tel" id="tel" value="{{ c.tel or '' }}"></label>
+    <label class="f">Situation <input name="situation" id="situation" value="{{ c.situation or '' }}"></label>
+    <label class="f wide">Produit / Service commandé <textarea name="produit" id="produit">{{ c.produit or '' }}</textarea></label>
+    <label class="f">Quantité <input type="number" min="0" step="any" name="qte" id="qte" value="{{ '%g'|format(c.qte) if c.qte is not none else '' }}"></label>
+    <label class="f">Prix unitaire (Ar) <input type="number" min="0" step="any" name="pu" id="pu" value="{{ '%g'|format(c.pu) if c.pu is not none else '' }}"></label>
+    <label class="f">Statut commande <select name="statut" id="statut"><option value="">—</option>{% for s in statuts %}<option {% if c.statut==s %}selected{% endif %}>{{ s }}</option>{% endfor %}{% if c.statut and c.statut not in statuts %}<option selected>{{ c.statut }}</option>{% endif %}</select></label>
+    <label class="f">Statut livraison <select name="livraison" id="livraison"><option value="">—</option>{% for s in livraisons %}<option {% if c.livraison==s %}selected{% endif %}>{{ s }}</option>{% endfor %}{% if c.livraison and c.livraison not in livraisons %}<option selected>{{ c.livraison }}</option>{% endif %}</select></label>
+    <label class="f">Date livraison <input type="date" name="date_livraison" id="date_livraison" value="{{ c.date_livraison or '' }}"></label>
+    {% for field, label, opts in [('recu_par','Reçu par (nandray ny commande)',team_recu),('responsable','Responsable',team_resp),('equipe_msg','Équipe qui a répondu',team_msg)] %}
+    <label class="f">{{ label }} <select name="{{ field }}" id="{{ field }}"><option value="">—</option>{% for n in opts %}<option {% if c[field]==n %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></label>
+    {% endfor %}
+    <label class="f">En ligne / local <input name="canal" id="canal" list="canaux" value="{{ c.canal or '' }}"></label>
+    <datalist id="canaux">{% for x in canaux %}<option value="{{ x }}">{% endfor %}</datalist>
+    <label class="f wide">Remarques <textarea name="remarques" id="remarques">{{ c.remarques or '' }}</textarea></label>
+    <div class="actions wide">
+      {% if not new %}<span class="meta" style="margin-right:auto">
+        {% if c.created_by %}Créée par {{ who.get(c.created_by,'?') }} le {{ c.created_at|fdt }}{% else %}Importée depuis Excel{% endif %}
+        {% if c.updated_by %} · modifiée par {{ who.get(c.updated_by,'?') }} le {{ c.updated_at|fdt }}{% endif %}</span>{% endif %}
+      <button class="primary">{{ 'Créer la commande' if new else 'Enregistrer la commande' }}</button>
+    </div>
+  </form>
+</div>
+
+{% if not new %}
+<div class="card paybox" id="paiement">
+  <div class="sum3">
+    <div><span class="small muted">Montant</span><b>{{ c.total|ar }}</b></div>
+    <div><span class="small muted">Payé</span><b>{{ c.paid|ar }}</b></div>
+    <div><span class="small muted">Reste</span><b>{{ c.reste|ar }}</b></div>
+    <div><span class="small muted">Statut paiement</span><span>{% if c.sp %}<span class="chip {{ {'Payé':'st-good','Avance versée':'st-warn','Non payé':'st-bad'}.get(c.sp,'') }}">{{ c.sp }}</span>{% else %}—{% endif %}</span></div>
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Date</th><th class="r">Montant</th><th>Mode</th><th>Référence</th><th>Encaissé par</th><th>Saisi par</th><th></th></tr></thead>
+    <tbody>
+    {% for p in pays %}
+      <tr class="{{ 'cancel' if p.annule }}"><td class="num">{{ p.date|fd }}</td><td class="num r">{{ p.montant|num }}</td>
+        <td class="keep"><span class="chip" style="--c:{{ MODE_COLORS.get(p.mode,'#8a94a0') }}"><i></i>{{ p.mode }}</span></td>
+        <td class="small num">{{ p.reference or '' }}</td><td>{{ p.encaisse_par or '—' }}</td>
+        <td class="keep"><div class="who">{{ p.saisi_nom or 'Import Excel' }}<span>{{ p.saisi_le|fdt }}</span></div></td>
+        <td class="keep r"><a href="{{ url_for('paiement', pid=p.id) }}">{{ 'Voir' if p.annule else 'Modifier / annuler' }}</a></td></tr>
+    {% else %}<tr><td colspan="7" class="empty">Aucun paiement pour cette commande.</td></tr>{% endfor %}
+    </tbody></table></div>
+  <h3 style="font-size:14px">Ajouter un paiement <small class="muted">— enregistré au nom de {{ g.user.nom }}</small></h3>
+  <form method="post" action="{{ url_for('paiement_ajout', cid=c.id) }}" class="form">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    {% set pf = {'montant': c.reste if c.reste > 0 else ''} %}{% set pf_team = team %}{% set pf_lock = False %}
+    {% include "_payform.html" %}
+    <div class="actions wide"><button class="primary">Enregistrer le paiement</button></div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

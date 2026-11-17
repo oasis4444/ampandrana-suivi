@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% block title %}Paiement {{ p.commande_id|code }}{% endblock %}
+{% block content %}
+<div class="toolbar"><a href="{{ url_for('paiements') }}">← Paiements</a> · <a href="{{ url_for('commande', cid=p.commande_id) }}">{{ p.commande_id|code }} — {{ p.client or '?' }}</a></div>
+<div class="card">
+  <h2>Paiement de {{ p.montant|ar }} <small>{{ p.commande_id|code }} — {{ p.client or 'commande introuvable' }}</small>
+    {% if p.annule %}<span class="chip st-bad">Annulé</span>{% endif %}</h2>
+  <p class="meta">
+    {% if p.saisi_par %}Saisi par <b>{{ p.saisi_nom }}</b> le {{ p.saisi_le|fdt }}{% else %}Importé depuis Excel{% endif %}
+    {% if p.modifie_par %} · modifié par <b>{{ p.modifie_nom }}</b> le {{ p.modifie_le|fdt }}{% endif %}
+    {% if p.annule %} · <span class="flag">annulé par {{ p.annule_nom }} le {{ p.annule_le|fdt }} — {{ p.motif_annulation }}</span>{% endif %}
+  </p>
+  <form method="post" class="form">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    {% set pf = p %}{% set pf_team = team %}{% set pf_lock = True %}
+    {% include "_payform.html" %}
+    <p class="small muted wide" style="margin:0">Le montant ne se modifie pas : annulez ce paiement et saisissez-en un nouveau.</p>
+    {% if not p.annule %}<div class="actions wide"><button class="primary">Enregistrer les modifications</button></div>{% endif %}
+  </form>
+</div>
+{% if not p.annule %}
+<div class="card">
+  <details><summary>Annuler ce paiement…</summary>
+  <form method="post" action="{{ url_for('paiement_annuler', pid=p.id) }}" class="toolbar" style="margin-top:10px">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label class="f grow">Motif de l'annulation (obligatoire) <input name="motif" id="motif" required></label>
+    <button class="danger">Confirmer l'annulation</button>
+  </form></details>
+</div>
+{% endif %}
+{% endblock %}

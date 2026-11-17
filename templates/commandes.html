@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% block title %}Commandes — Ampandrana{% endblock %}
+{% block content %}
+<form class="toolbar" method="get">
+  <label class="f grow">Rechercher <input type="search" name="q" id="q" value="{{ args.get('q','') }}" placeholder="Client, téléphone, produit, N°…"></label>
+  <label class="f">Statut commande <select name="statut" id="statut">
+    <option value="">Tous</option>{% for s in statuts %}<option {% if args.get('statut')==s %}selected{% endif %}>{{ s }}</option>{% endfor %}<option value="-" {% if args.get('statut')=='-' %}selected{% endif %}>Sans statut</option></select></label>
+  <label class="f">Paiement <select name="paiement" id="paiement">
+    <option value="">Tous</option>{% for s in ['Payé','Avance versée','Non payé'] %}<option {% if args.get('paiement')==s %}selected{% endif %}>{{ s }}</option>{% endfor %}<option value="-" {% if args.get('paiement')=='-' %}selected{% endif %}>Sans prix</option></select></label>
+  <label class="small"><input type="checkbox" name="prix" value="1" {% if args.get('prix')=='1' %}checked{% endif %}> Avec prix seulement</label>
+  <button>Filtrer</button>
+  <span style="flex:1"></span>
+  <a class="btn primary" href="{{ url_for('commande_nouvelle') }}">+ Nouvelle commande</a>
+</form>
+<div class="muted small">{{ count }} commande(s) · Montant {{ sums.total|ar }} · Encaissé {{ sums.paid|ar }} · Reste {{ sums.reste|ar }}</div>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>N°</th><th>Date</th><th>Client</th><th>Téléphone</th><th>Produit / Service</th><th class="r">Montant</th><th class="r">Payé</th><th class="r">Reste</th><th>Statut</th><th>Paiement</th><th>Responsable</th></tr></thead>
+  <tbody>
+  {% for c in rows %}
+    <tr class="click" onclick="location.href='{{ url_for('commande', cid=c.id) }}'">
+      <td class="num"><a href="{{ url_for('commande', cid=c.id) }}">{{ c.code }}</a></td><td class="num">{{ c.date|fd }}</td><td>{{ c.client }}</td><td class="small">{{ c.tel or '' }}</td>
+      <td class="clip" title="{{ c.produit or '' }}">{{ c.produit or '' }}</td>
+      <td class="num r">{{ c.total|num }}</td><td class="num r">{{ c.paid|num }}</td><td class="num r">{{ c.reste|num }}</td>
+      <td>{% if c.statut %}<span class="chip {{ {'OK':'st-good','En cours':'st-info','En attente':'st-warn','Annulé':'st-bad'}.get(c.statut,'') }}">{{ c.statut }}</span>{% endif %}</td>
+      <td>{% if c.sp %}<span class="chip {{ {'Payé':'st-good','Avance versée':'st-warn','Non payé':'st-bad'}.get(c.sp,'') }}">{{ c.sp }}</span>{% endif %}</td>
+      <td>{{ c.responsable or '' }}</td></tr>
+  {% else %}<tr><td colspan="11" class="empty">Aucune commande ne correspond.</td></tr>{% endfor %}
+  </tbody></table></div>
+{% if pages > 1 %}
+<div class="pager">
+  {% set qs = args.to_dict() %}
+  {% if page > 1 %}{% set _ = qs.update({'page': page-1}) %}<a href="{{ url_for('commandes', **qs) }}">← Précédent</a>{% endif %}
+  <span class="cur">Page {{ page }} / {{ pages }}</span>
+  {% if page < pages %}{% set _ = qs.update({'page': page+1}) %}<a href="{{ url_for('commandes', **qs) }}">Suivant →</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}
