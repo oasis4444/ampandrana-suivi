@@ -550,7 +550,14 @@ def commandes():
     retard = request.args.get("retard") == "1"
     late_ids = {c["id"] for c in livraisons_a_surveiller(commandes_with_paid())["retard"]} if retard else set()
     page = max(1, int(request.args.get("page", 1) or 1))
-    rows = commandes_with_paid("ORDER BY c.id DESC")
+    tri = request.args.get("tri", "date_desc")
+    order = {"date_desc": "ORDER BY c.date IS NULL, c.date DESC, c.id DESC",
+             "date_asc": "ORDER BY c.date IS NULL, c.date ASC, c.id ASC",
+             "num_desc": "ORDER BY c.id DESC",
+             "livraison": "ORDER BY c.date_livraison IS NULL, c.date_livraison ASC, c.id DESC"}.get(tri)
+    if order is None:
+        tri, order = "date_desc", "ORDER BY c.date IS NULL, c.date DESC, c.id DESC"
+    rows = commandes_with_paid(order)
     out = []
     for c in rows:
         if st == "-" and c["statut"]:
@@ -575,7 +582,7 @@ def commandes():
     pages = max(1, (len(out) + per - 1) // per)
     page = min(page, pages)
     return render_template("commandes.html", rows=out[(page - 1) * per: page * per], count=len(out), sums=sums,
-                           page=page, pages=pages, statuts=liste("statut_commande"), args=request.args)
+                           page=page, pages=pages, statuts=liste("statut_commande"), args=request.args, tri=tri)
 
 
 def cmd_from_form(f):

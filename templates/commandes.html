@@ -8,6 +8,9 @@
     <option value="">Tous</option>{% for s in ['Payé','Avance versée','Non payé'] %}<option {% if args.get('paiement')==s %}selected{% endif %}>{{ s }}</option>{% endfor %}<option value="-" {% if args.get('paiement')=='-' %}selected{% endif %}>Sans prix</option></select></label>
   <label class="small"><input type="checkbox" name="prix" value="1" {% if args.get('prix')=='1' %}checked{% endif %}> Avec prix seulement</label>
   <label class="small"><input type="checkbox" name="retard" value="1" {% if args.get('retard')=='1' %}checked{% endif %}> En retard de livraison</label>
+  <label class="f">Trier par <select name="tri" id="tri" onchange="this.form.submit()">
+    {% for v, l in [('date_desc','Date : plus récentes d\'abord'),('date_asc','Date : plus anciennes d\'abord'),('num_desc','N° commande'),('livraison','Date de livraison')] %}
+    <option value="{{ v }}" {% if tri==v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></label>
   <button>Filtrer</button>
   <span style="flex:1"></span>
   <a class="btn primary" href="{{ url_for('commande_nouvelle') }}">+ Nouvelle commande</a>
