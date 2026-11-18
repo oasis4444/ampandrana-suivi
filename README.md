@@ -70,7 +70,7 @@ Remplace les commandes, paiements, rendez-vous et l'équipe par ceux du fichier.
 
 - `app.py` — application (routes, calculs, droits)
 - `schema.sql` — tables SQLite
-- `importer.py` / `exporter.py` — import et export Excel
+- `ampandrana_importer.py` / `ampandrana_exporter.py` — import et export Excel
 - `templates/`, `static/style.css` — pages
 - `pythonanywhere_wsgi.py` — modèle de fichier WSGI
 

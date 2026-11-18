@@ -41,7 +41,7 @@ LISTE_LABELS = {
 MODE_COLORS = {"Espèces": "#2e7d4f", "MVola": "#c9a200", "Orange Money": "#e56b00",
                "Airtel Money": "#c62828", "Virement": "#5b6b8c", A_PRECISER: "#8a94a0"}
 
-app = Flask(__name__, instance_relative_config=True)
+app = Flask(__name__, root_path=BASE_DIR, instance_path=os.path.join(BASE_DIR, "instance"))
 os.makedirs(app.instance_path, exist_ok=True)
 app.config["DATABASE"] = os.environ.get("DATABASE", os.path.join(app.instance_path, "ampandrana.db"))
 app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
@@ -100,7 +100,7 @@ def init_db_command():
 def import_excel_command(path):
     """flask --app app import-excel fichier.xlsx  (remplace les données existantes)"""
     init_db()
-    from importer import import_workbook
+    from ampandrana_importer import import_workbook
     res = import_workbook(get_db(), path, replace=True)
     get_db().commit()
     print(res)
@@ -969,7 +969,7 @@ def import_page():
         if counts["commandes"] and not replace:
             flash("La base contient déjà des commandes : cochez « Remplacer » pour réimporter.", "bad")
             return redirect(url_for("import_page"))
-        from importer import import_workbook
+        from ampandrana_importer import import_workbook
         path = os.path.join(app.instance_path, "import.xlsx")
         f.save(path)
         try:
@@ -998,7 +998,7 @@ def csv_response(name, rows):
 @app.route("/export.xlsx")
 @login_required
 def export_xlsx():
-    from exporter import build_workbook
+    from ampandrana_exporter import build_workbook
     data = build_workbook(get_db(), commandes_with_paid("ORDER BY c.id"), modes())
     return send_file(data, as_attachment=True, download_name=f"Ampandrana_export_{iso(today())}.xlsx",
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
