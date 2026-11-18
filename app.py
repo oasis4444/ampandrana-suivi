@@ -424,11 +424,30 @@ def dashboard():
              "encaisse": sum(p["montant"] for p in allp), "reste": sum(c["reste"] for c in cmds),
              "par_statut": {s: sum(1 for c in cmds if c["statut"] == s) for s in liste("statut_commande")}}
     chart = monthly_by_mode(6)
-    return render_template("dashboard.html", periode=periode, du=request.args.get("du", ""),
+    livraisons = livraisons_a_surveiller(cmds)
+    return render_template("dashboard.html", livraisons=livraisons, periode=periode, du=request.args.get("du", ""),
                            au=request.args.get("au", ""), label=period_label(periode, a, b),
                            by_mode=by_mode, total=total, npay=len(pays), mobile=mobile, mlist=mlist,
                            member_rows=member_rows, saisie=sorted(saisie.items(), key=lambda x: -x[1]["s"]),
                            alerts=alerts, stats=stats, chart=chart)
+
+
+def livraisons_a_surveiller(cmds, jours=3):
+    """Projets non livrés dont la date de livraison est passée (en retard) ou arrive dans `jours` jours."""
+    t = today()
+    retard, bientot = [], []
+    for c in cmds:
+        d = parse_date(c.get("date_livraison"))
+        if not d or c.get("livraison") == "Livré" or c.get("statut") == "Annulé":
+            continue
+        c = dict(c, jours=(t - d).days)
+        if d < t:
+            retard.append(c)
+        elif d <= t + timedelta(days=jours):
+            bientot.append(c)
+    retard.sort(key=lambda c: c["date_livraison"])
+    bientot.sort(key=lambda c: c["date_livraison"])
+    return {"retard": retard, "bientot": bientot, "jours": jours}
 
 
 def monthly_by_mode(n):
@@ -528,6 +547,8 @@ def commandes():
     st = request.args.get("statut", "")
     sp = request.args.get("paiement", "")
     prix = request.args.get("prix") == "1"
+    retard = request.args.get("retard") == "1"
+    late_ids = {c["id"] for c in livraisons_a_surveiller(commandes_with_paid())["retard"]} if retard else set()
     page = max(1, int(request.args.get("page", 1) or 1))
     rows = commandes_with_paid("ORDER BY c.id DESC")
     out = []
@@ -541,6 +562,8 @@ def commandes():
         if sp and sp != "-" and c["sp"] != sp:
             continue
         if prix and not c["total"]:
+            continue
+        if retard and c["id"] not in late_ids:
             continue
         if q:
             hay = " ".join(str(c.get(k) or "") for k in ("code", "client", "tel", "produit", "situation", "remarques", "responsable")).lower()

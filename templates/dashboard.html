@@ -15,6 +15,29 @@
   <a class="btn" href="{{ url_for('export_xlsx') }}">Exporter tout en Excel</a>
 </form>
 
+{% if livraisons.retard or livraisons.bientot %}
+<div class="card" style="border-color:var(--bad)">
+  <h2>Livraisons à surveiller
+    {% if livraisons.retard %}<span class="chip st-bad">{{ livraisons.retard|length }} en retard</span>{% endif %}
+    {% if livraisons.bientot %}<span class="chip st-warn">{{ livraisons.bientot|length }} à livrer sous {{ livraisons.jours }} jours</span>{% endif %}
+    <small>projets non livrés, selon la date de livraison prévue</small></h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Alerte</th><th>N°</th><th>Client</th><th>Produit / Service</th><th>Livraison prévue</th><th>Statut livraison</th><th>Responsable</th><th class="r">Reste à payer</th></tr></thead>
+    <tbody>
+    {% for c in livraisons.retard %}
+      <tr class="click" onclick="location.href='{{ url_for('commande', cid=c.id) }}'"><td><span class="chip st-bad">En retard de {{ c.jours }} jour{{ 's' if c.jours > 1 }}</span></td>
+        <td class="num"><a href="{{ url_for('commande', cid=c.id) }}">{{ c.code }}</a></td><td>{{ c.client }}</td><td class="clip" title="{{ c.produit or '' }}">{{ c.produit or '' }}</td>
+        <td class="num">{{ c.date_livraison|fd }}</td><td>{{ c.livraison or 'Non renseigné' }}</td><td>{{ c.responsable or '—' }}</td><td class="num r">{{ c.reste|num }}</td></tr>
+    {% endfor %}
+    {% for c in livraisons.bientot %}
+      <tr class="click" onclick="location.href='{{ url_for('commande', cid=c.id) }}'"><td><span class="chip st-warn">{% if c.jours == 0 %}Aujourd'hui{% else %}Dans {{ -c.jours }} jour{{ 's' if -c.jours > 1 }}{% endif %}</span></td>
+        <td class="num"><a href="{{ url_for('commande', cid=c.id) }}">{{ c.code }}</a></td><td>{{ c.client }}</td><td class="clip" title="{{ c.produit or '' }}">{{ c.produit or '' }}</td>
+        <td class="num">{{ c.date_livraison|fd }}</td><td>{{ c.livraison or 'Non renseigné' }}</td><td>{{ c.responsable or '—' }}</td><td class="num r">{{ c.reste|num }}</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+</div>
+{% endif %}
+
 <div class="grid tiles">
   <div class="tile" style="--c:var(--accent)"><div class="l">Total encaissé</div><div class="v">{{ total|ar }}</div><div class="s">{{ npay }} paiement(s)</div></div>
   <div class="tile" style="--c:var(--m-esp)"><div class="l">Espèces</div><div class="v">{{ by_mode['Espèces'].s|ar if 'Espèces' in by_mode else '0 Ar' }}</div><div class="s">{{ by_mode['Espèces'].n if 'Espèces' in by_mode else 0 }} paiement(s)</div></div>
@@ -60,7 +83,8 @@
   <div class="card">
     <h2>À vérifier</h2>
     <div class="alerts">
-      {% set any_alert = alerts.prec or alerts.enc or alerts.ref or alerts.lost %}
+      {% set any_alert = alerts.prec or alerts.enc or alerts.ref or alerts.lost or livraisons.retard %}
+      {% if livraisons.retard %}<a class="btn" href="{{ url_for('commandes', retard=1) }}"><span><b class="num">{{ livraisons.retard|length }}</b> projet(s) en retard de livraison</span></a>{% endif %}
       {% if alerts.prec %}<a class="btn" href="{{ url_for('paiements', verifier=1) }}"><span><b class="num">{{ alerts.prec }}</b> paiement(s) dont le mode est « À préciser »</span></a>{% endif %}
       {% if alerts.enc %}<a class="btn" href="{{ url_for('paiements', enc='-') }}"><span><b class="num">{{ alerts.enc }}</b> paiement(s) sans « Encaissé par »</span></a>{% endif %}
       {% if alerts.ref %}<a class="btn" href="{{ url_for('paiements', verifier=1) }}"><span><b class="num">{{ alerts.ref }}</b> paiement(s) mobile money sans référence</span></a>{% endif %}
